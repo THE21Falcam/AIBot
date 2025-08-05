@@ -1,4 +1,4 @@
-import os
+import toml
 import re
 import streamlit as st
 from google import genai
@@ -10,11 +10,9 @@ load_dotenv()
 # Initialize session state
 if "chat" not in st.session_state:
     # Load API key from environment variable
-    api_key = os.getenv('GOOGLE_API_KEY')
-    if not api_key:
-        st.error("API key not found. Set GOOGLE_API_KEY as an environment variable.")
-        st.stop()
-
+    with open('secrets.toml', 'r') as f:
+        config = toml.load(f)
+    api_key = config["GOOGLE_API_KEY"]
     client = genai.Client(api_key=api_key)
     grounding_tool = types.Tool(google_search=types.GoogleSearch())
     config = types.GenerateContentConfig(tools=[grounding_tool])
