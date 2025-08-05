@@ -1,10 +1,10 @@
-import toml
-import re
 import streamlit as st
 from google import genai
 from google.genai import types
+import re
 
-# Initialize session state
+st.title("🤖 AI Teacher + Text Adventure Game")
+
 # Step 1: Ask for Gemini API Key
 if "api_key" not in st.session_state:
     st.session_state.api_key = ""
@@ -39,48 +39,69 @@ if "chat" not in st.session_state:
         st.error("❌ Failed to initialize Gemini API. Please check your key.")
         st.stop()
 
-st.title("👩‍🏫 AI Teacher & Text Adventure")
-
-# Step 1: Language input
+# Step 4: Ask for preferred language
 if not st.session_state.language_chosen:
     language = st.text_input("🌐 Enter your preferred language:")
     if language:
         st.session_state.language_chosen = True
 
-        initial_prompt = "You are the Teacher of the Future You want to Under each student on a deeper Level Under stand there Weak points and assist them in learning Knowing this Give me 5 Questions About Various Fields of Education in " + Language + " language, The Questens should be one after another ie when i finish answring 1 question then only give me the next one ,The Question Should be Brief In nature, after the last and fifth question is answered respond with Feedback for the student to his parents on how i can imporve themselfs by analazing the previous 5 Questions and feedback should be In a Short Paragraph after the feedback start the Text Based Adventure Game with Many Chapter and Each Chapter Having 4 Quests Also Make them Explain There Choices And at the end of Each Chapter evaluate it and Provide Feedback for student to his parents for every positive Interaction and consiter explainetion for the choices to assigen experience points to the interaction, And based on the Experience Point Calculate The Level and Display It when the student Asks for it"
-        response = st.session_state.chat.send_message(initial_prompt)
-        st.session_state.messages.append(("Gemini", response.text))
-        st.rerun()
+        intro_prompt = f"""
+You are a futuristic teacher who understands students deeply.
+Your job is to identify their weak points and help them grow.
 
-# Step 2: Chat UI
-else:
-    # Display chat history
-    for role, message in st.session_state.messages:
-        if role == "User":
-            st.markdown(f"**You:** {message}")
-        else:
-            st.markdown(f"**Gemini:** {message}")
+1. Ask 5 questions about different fields of education in {language}.
+2. Ask one question at a time. Only give the next question after the previous one is answered.
+3. Keep questions short and clear.
+4. After all 5 answers, analyze and give a short feedback paragraph to the student's parents.
+5. Then start a text-based adventure game divided into chapters.
+   - Each chapter has 4 quests.
+   - Let the student explain their choices.
+   - Give feedback at the end of each chapter.
+   - Reward experience points (XP) for good decisions.
+   - Calculate level based on XP (100 XP = 1 level).
+6. When the student types "level", tell them their current level and XP.
+"""
+        try:
+            response = st.session_state.chat.send_message(intro_prompt)
+            st.session_state.messages.append(("Gemini", response.text))
+            st.rerun()
+        except Exception as e:
+            st.error("❌ Error sending message to Gemini.")
+            st.stop()
 
-    # Input box
+# Step 5: Display Chat History
+for role, message in st.session_state.messages:
+    if role == "User":
+        st.markdown(f"**You:** {message}")
+    else:
+        st.markdown(f"**Gemini:** {message}")
+
+# Step 6: Chat input form (auto-clear)
+with st.form("chat_form", clear_on_submit=True):
     user_input = st.text_input("💬 Enter your message:", key="user_input")
-    if st.button("Send"):
-        if user_input:
-            st.session_state.messages.append(("User", user_input))
+    submitted = st.form_submit_button("Send")
 
-            # Handle level check
-            if user_input.strip().lower() == "level":
-                level_msg = f"Your current level is {st.session_state.level}, XP: {st.session_state.xp}"
-                st.session_state.messages.append(("Gemini", level_msg))
-            else:
-                response = st.session_state.chat.send_message(user_input)
-                st.session_state.messages.append(("Gemini", response.text))
+if submitted and user_input:
+    st.session_state.messages.append(("User", user_input))
 
-                # Extract XP if present
-                match = re.search(r'(\d+)\s*xp', response.text.lower())
-                if match:
-                    earned = int(match.group(1))
-                    st.session_state.xp += earned
-                    st.session_state.level = st.session_state.xp // 100 + 1
-                    xp_msg = f"🎉 You gained {earned} XP! Level: {st.session_state.level}"
-                    st.session_state.messages.append(("Gemini", xp_msg))
-        st.rerun()
+    if user_input.strip().lower() == "level":
+        level_msg = f"🌟 Your current level is {st.session_state.level}, XP: {st.session_state.xp}"
+        st.session_state.messages.append(("Gemini", level_msg))
+    else:
+        try:
+            response = st.session_state.chat.send_message(user_input)
+            st.session_state.messages.append(("Gemini", response.text))
+
+            # Try to extract XP
+            match = re.search(r'(\d+)\s*xp', response.text.lower())
+            if match:
+                earned = int(match.group(1))
+                st.session_state.xp += earned
+                st.session_state.level = st.session_state.xp // 100 + 1
+                xp_msg = f"🎉 You gained {earned} XP! Current level: {st.session_state.level}"
+                st.session_state.messages.append(("Gemini", xp_msg))
+        except Exception as e:
+            st.error("❌ Error processing your message.")
+            st.stop()
+
+    st.rerun()
