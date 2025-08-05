@@ -5,11 +5,9 @@ from google import genai
 from google.genai import types
 
 # Initialize session state
+api_key = st.secrets["google"]["api_key"]
 if "chat" not in st.session_state:
     # Load API key from environment variable
-    with open('secrets.toml', 'r') as f:
-        config = toml.load(f)
-    api_key = config["GOOGLE_API_KEY"]
     client = genai.Client(api_key=api_key)
     grounding_tool = types.Tool(google_search=types.GoogleSearch())
     config = types.GenerateContentConfig(tools=[grounding_tool])
