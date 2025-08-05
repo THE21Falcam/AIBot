@@ -2,46 +2,45 @@ import streamlit as st
 from google import genai
 from google.genai import types
 
-# --- Streamlit App Setup ---
+# --- Streamlit Page Setup ---
 st.set_page_config(page_title="Gemini AI Teacher & Adventure", layout="centered")
 st.title("🎓 Gemini AI Teacher & Text Adventure Game")
 
-# --- Session State Setup ---
+# --- Session State Initialization ---
 if "chat" not in st.session_state:
     st.session_state.chat = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "language_submitted" not in st.session_state:
     st.session_state.language_submitted = False
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""
 
-# --- Get Gemini API Key ---
+# --- Get API Key ---
 api_key = st.text_input("🔑 Enter your Google Gemini API Key", type="password")
 
-# --- Proceed when key is present ---
 if api_key:
     try:
-        # Initialize Gemini Client
+        # Initialize Gemini client
         client = genai.Client(api_key=api_key)
         grounding_tool = types.Tool(google_search=types.GoogleSearch())
         config = types.GenerateContentConfig(tools=[grounding_tool])
 
-        # Initialize chat only once
+        # Create chat session once
         if st.session_state.chat is None:
             st.session_state.chat = client.chats.create(
                 model='gemini-2.0-flash',
                 config=config
             )
 
-        # Input for language
+        # --- Ask for Language ---
         if not st.session_state.language_submitted:
             language = st.text_input("🌐 Enter the language you prefer", key="lang_input")
-
             if language:
-                # Mark language as submitted
                 st.session_state.language_submitted = True
                 st.session_state.language = language
 
-                # Send initial prompt
+                # Initial prompt to Gemini
                 initial_prompt = (
                     f"You are the Teacher of the Future. You want to understand each student deeply, "
                     f"identify their weak points, and assist their learning. Generate 5 brief questions in {language} "
@@ -55,22 +54,30 @@ if api_key:
                 st.session_state.messages.append(("Gemini", response.text))
                 st.rerun()
 
-        # Display message history
-        for role, msg in st.session_state.messages:
-            st.markdown(f"**{role}:** {msg}")
+        # --- Display Chat Messages ---
+        for role, message in st.session_state.messages:
+            st.markdown(f"**{role}:** {message}")
 
-        # Input box for user responses (after language is given)
-        if st.session_state.language_submitted:
-            user_input = st.text_input("✏️ Your response", key="user_input")
-
+        # --- User Input Callback Function ---
+        def handle_user_input():
+            user_input = st.session_state.user_input.strip()
             if user_input:
                 response = st.session_state.chat.send_message(user_input)
                 st.session_state.messages.append(("You", user_input))
                 st.session_state.messages.append(("Gemini", response.text))
-                st.session_state.user_input = ""  # Clear input
-                st.rerun()
+            # Clear input safely after submission
+            st.session_state.user_input = ""
+
+        # --- Display Input Box (Only after language is submitted) ---
+        if st.session_state.language_submitted:
+            st.text_input(
+                "✏️ Your response",
+                key="user_input",
+                on_change=handle_user_input,
+                placeholder="Type your answer or question and press Enter"
+            )
 
     except Exception as e:
-        st.error(f"❌ Error: {str(e)}")
+        st.error(f"❌ Error: {e}")
 else:
-    st.info("Please enter your Gemini API key to begin.")
+    st.info("Please enter your Google Gemini API key to begin.")
