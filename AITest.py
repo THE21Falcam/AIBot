@@ -5,17 +5,39 @@ from google import genai
 from google.genai import types
 
 # Initialize session state
-api_key = st.secrets["google"]["api_key"]
+# Step 1: Ask for Gemini API Key
+if "api_key" not in st.session_state:
+    st.session_state.api_key = ""
+
+api_key_input = st.text_input(
+    "🔐 Enter your Gemini API Key",
+    type="password",
+    value=st.session_state.api_key,
+    placeholder="Paste your Gemini API key here..."
+)
+
+if api_key_input and api_key_input != st.session_state.api_key:
+    st.session_state.api_key = api_key_input
+    st.rerun()
+
+# Step 2: Stop execution if API key is not provided
+if not st.session_state.api_key:
+    st.stop()
+
+# Step 3: Setup Gemini Chat once
 if "chat" not in st.session_state:
-    # Load API key from environment variable
-    client = genai.Client(api_key=api_key)
-    grounding_tool = types.Tool(google_search=types.GoogleSearch())
-    config = types.GenerateContentConfig(tools=[grounding_tool])
-    st.session_state.chat = client.chats.create(model="gemini-2.0-flash", config=config)
-    st.session_state.messages = []
-    st.session_state.language_chosen = False
-    st.session_state.xp = 0
-    st.session_state.level = 1
+    try:
+        client = genai.Client(api_key=st.session_state.api_key)
+        tool = types.Tool(google_search=types.GoogleSearch())
+        config = types.GenerateContentConfig(tools=[tool])
+        st.session_state.chat = client.chats.create(model="gemini-2.0-flash", config=config)
+        st.session_state.messages = []
+        st.session_state.language_chosen = False
+        st.session_state.xp = 0
+        st.session_state.level = 1
+    except Exception as e:
+        st.error("❌ Failed to initialize Gemini API. Please check your key.")
+        st.stop()
 
 st.title("👩‍🏫 AI Teacher & Text Adventure")
 
