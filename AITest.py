@@ -25,22 +25,7 @@ if not st.session_state.language_chosen:
     if language:
         st.session_state.language_chosen = True
 
-        initial_prompt = f"""
-You are a futuristic teacher who understands students deeply.
-Your job is to identify their weak points and help them grow.
-
-1. Ask 5 questions about different fields of education in {language}.
-2. Ask one question at a time. Only give the next question after the previous one is answered.
-3. Keep questions short and clear.
-4. After all 5 answers, analyze and give a short feedback paragraph to the student's parents.
-5. Then start a text-based adventure game divided into chapters.
-   - Each chapter has 4 quests.
-   - Let the student explain their choices.
-   - Give feedback at the end of each chapter.
-   - Reward experience points (XP) for good decisions.
-   - Calculate level based on XP (100 XP = 1 level).
-6. When the student types "level", tell them their current level and XP.
-"""
+        initial_prompt = "You are the Teacher of the Future You want to Under each student on a deeper Level Under stand there Weak points and assist them in learning Knowing this Give me 5 Questions About Various Fields of Education in " + Language + " language, The Questens should be one after another ie when i finish answring 1 question then only give me the next one ,The Question Should be Brief In nature, after the last and fifth question is answered respond with Feedback for the student to his parents on how i can imporve themselfs by analazing the previous 5 Questions and feedback should be In a Short Paragraph after the feedback start the Text Based Adventure Game with Many Chapter and Each Chapter Having 4 Quests Also Make them Explain There Choices And at the end of Each Chapter evaluate it and Provide Feedback for student to his parents for every positive Interaction and consiter explainetion for the choices to assigen experience points to the interaction, And based on the Experience Point Calculate The Level and Display It when the student Asks for it"
         response = st.session_state.chat.send_message(initial_prompt)
         st.session_state.messages.append(("Gemini", response.text))
         st.rerun()
