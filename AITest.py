@@ -3,9 +3,6 @@ import re
 import streamlit as st
 from google import genai
 from google.genai import types
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Initialize session state
 if "chat" not in st.session_state:
